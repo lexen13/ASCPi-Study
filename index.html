@@ -476,12 +476,17 @@ function renderStudy(app){
     const frWrap=e('div',{});
     const ta=e('textarea',{className:'fr-textarea',placeholder:"Type your answer... Include the diagnosis, key reasoning, or best answer choice.",
       disabled:s.frFeedback!==null,value:s.freeResponse});
-    ta.addEventListener('input',ev=>{state.freeResponse=ev.target.value});
+    ta.addEventListener('input',ev=>{
+      state.freeResponse=ev.target.value;
+      const btn=document.getElementById('fr-check-btn');
+      if(btn)btn.disabled=!ev.target.value.trim();
+    });
     ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey&&!s.frFeedback){ev.preventDefault();checkFR()}});
     frWrap.appendChild(ta);
 
     if(!s.frFeedback){
-      frWrap.appendChild(e('button',{className:'fr-check-btn',disabled:!s.freeResponse.trim(),onClick:checkFR},'Check Answer'));
+      const checkBtn=e('button',{className:'fr-check-btn',id:'fr-check-btn',disabled:!s.freeResponse.trim(),onClick:checkFR},'Check Answer');
+      frWrap.appendChild(checkBtn);
     }else{
       const fb=e('div',{style:{marginTop:'12px',padding:'14px',borderRadius:'10px',
         background:s.frFeedback.correct?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)',
