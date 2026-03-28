@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ASCP BOC MLS(ASCPi) Study App</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:linear-gradient(145deg,#0a0f1a 0%,#111827 50%,#0f172a 100%);
+    color:#e2e8f0;min-height:100vh;overflow-x:hidden;
+  }
+  button{font-family:inherit}
+  textarea{font-family:inherit}
+  ::selection{background:#3b82f680;color:#fff}
+  textarea:focus{border-color:rgba(96,165,250,0.4)!important;box-shadow:0 0 0 3px rgba(96,165,250,0.1)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+  .fade-up{animation:fadeUp 0.3s ease}
+  .streak-pulse{animation:pulse 0.6s ease}
+
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);
+    position:sticky;top:0;background:rgba(10,15,26,0.95);backdrop-filter:blur(12px);z-index:10;
+  }
+  .top-btn{background:none;border:none;color:#64748b;font-size:14px;cursor:pointer;font-weight:600;padding:4px 8px}
+  .top-btn:hover{color:#94a3b8}
+  .stats-row{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600}
+  .progress-track{height:3px;background:rgba(255,255,255,0.06)}
+  .progress-fill{height:100%;transition:width 0.4s ease;border-radius:0 2px 2px 0}
+
+  .card-area{flex:1;padding:16px;display:flex;flex-direction:column}
+  .badge-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .cat-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;
+  }
+  .type-badge{
+    padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:1px;
+  }
+
+  .card-box{
+    border-radius:16px;border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);padding:20px;margin-bottom:16px;
+  }
+  .stem-box{
+    font-size:14px;color:#cbd5e1;line-height:1.6;margin-bottom:14px;
+    padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;
+  }
+  .question-text{font-size:16px;font-weight:700;color:#f1f5f9;line-height:1.5;margin-bottom:16px}
+
+  .choice-btn{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);
+    color:#e2e8f0;font-size:14px;font-weight:500;cursor:pointer;
+    text-align:left;transition:all 0.2s;line-height:1.4;
+    display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;
+  }
+  .choice-btn:hover:not(:disabled){background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15)}
+  .choice-btn:disabled{cursor:default}
+  .choice-btn.correct{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.4);color:#86efac}
+  .choice-btn.wrong{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:#fca5a5}
+  .choice-letter{
+    min-width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;background:rgba(255,255,255,0.08);color:#94a3b8;flex-shrink:0;
+  }
+  .choice-letter.correct{background:rgba(34,197,94,0.3);color:#86efac}
+  .choice-letter.wrong{background:rgba(239,68,68,0.3);color:#fca5a5}
+
+  .explain-box{
+    padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;
+  }
+  .explain-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#60a5fa;font-weight:700;margin-bottom:8px}
+  .explain-text{font-size:13px;color:#cbd5e1;line-height:1.7}
+
+  .next-btn{
+    width:100%;padding:14px;border-radius:12px;border:none;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;
+    font-size:15px;font-weight:700;cursor:pointer;
+    box-shadow:0 4px 16px rgba(59,130,246,0.25);
+    transition:transform 0.15s,box-shadow 0.15s;margin-top:auto;
+  }
+  .next-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(59,130,246,0.35)}
+  .next-btn:active{transform:translateY(0)}
+
+  .start-btn{
+    width:100%;padding:16px;border-radius:14px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;
+    font-size:16px;font-weight:700;letter-spacing:0.5px;
+    transition:all 0.3s;box-shadow:0 4px 20px rgba(59,130,246,0.3);
+  }
+  .start-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(59,130,246,0.4)}
+  .start-btn:disabled{background:#1e293b;color:#475569;cursor:not-allowed;box-shadow:none;transform:none}
+
+  .fr-textarea{
+    width:100%;min-height:100px;padding:14px;border-radius:10px;
+    border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+    color:#e2e8f0;font-size:14px;resize:vertical;line-height:1.5;outline:none;
+  }
+  .fr-textarea:disabled{opacity:0.6}
+  .fr-check-btn{
+    margin-top:10px;width:100%;padding:12px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;
+    font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .fr-check-btn:disabled{background:#1e293b;color:#475569;cursor:not-allowed}
+
+  .reveal-btn{
+    padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05);color:#93c5fd;font-size:14px;
+    font-weight:600;cursor:pointer;width:100%;transition:all 0.2s;
+  }
+  .reveal-btn:hover{background:rgba(255,255,255,0.08)}
+
+  .mode-btn{
+    flex:1;padding:14px 8px;border-radius:12px;cursor:pointer;
+    font-size:12px;font-weight:600;text-align:center;transition:all 0.2s;
+  }
+  .cat-row{
+    display:flex;align-items:center;gap:10px;padding:12px 14px;
+    border-radius:10px;cursor:pointer;transition:all 0.2s;width:100%;
+    text-align:left;background:none;
+  }
+  .cat-row:hover{background:rgba(255,255,255,0.05)}
+  .cat-check{
+    width:20px;height:20px;border-radius:6px;display:flex;align-items:center;
+    justify-content:center;font-size:12px;color:white;font-weight:700;transition:all 0.2s;
+  }
+  .result-stat{
+    flex:1;text-align:center;padding:16px 8px;border-radius:12px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);
+  }
+  .result-val{font-size:28px;font-weight:800}
+  .result-label{font-size:11px;color:#64748b;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ==================== DATA ====================
+const CATEGORIES = {
+  BB:{name:"Blood Banking",color:"#c41e3a",icon:"🩸",weight:"17-22%"},
+  CHEM:{name:"Chemistry",color:"#2e6b4f",icon:"🧪",weight:"17-22%"},
+  HEM:{name:"Hematology",color:"#5b2c8e",icon:"🔬",weight:"17-22%"},
+  MICRO:{name:"Microbiology",color:"#b8860b",icon:"🦠",weight:"17-22%"},
+  UA:{name:"UA & Body Fluids",color:"#1a6b8a",icon:"💧",weight:"5-10%"},
+  IMM:{name:"Immunology",color:"#8b3a62",icon:"🛡️",weight:"5-10%"},
+  LAB:{name:"Lab Operations",color:"#4a5568",icon:"⚙️",weight:"5-10%"},
+};
+
+const Q = [
+  // ===== BLOOD BANKING =====
+  {id:1,cat:"BB",type:"scenario",stem:"A 28-year-old G2P1 woman at 28 weeks gestation is typed as Group O, Rh-negative. Antibody screen is negative. Her husband is Rh-positive.",q:"What is the most appropriate next step?",choices:["No intervention needed","Administer RhIG (300 μg) at 28 weeks","Perform Kleihauer-Betke test now","Wait until delivery to decide"],answer:1,explain:"Standard of care: RhIG at 28 weeks gestation for ALL Rh-negative mothers with Rh-positive or unknown fetuses, regardless of antibody screen. A second dose is given within 72 hours postpartum if baby is Rh-positive.",keywords:["rhig","rhogam","28 weeks","prophylactic","immunoglobulin"]},
+  {id:2,cat:"BB",type:"scenario",stem:"A patient receives a unit of packed RBCs. Within 10 minutes, the patient develops fever, chills, flank pain, and dark red urine.",q:"What is the most likely type of transfusion reaction?",choices:["Febrile non-hemolytic","Acute hemolytic transfusion reaction","TRALI","Allergic reaction"],answer:1,explain:"Acute onset during transfusion + fever + flank pain + hemoglobinuria (dark urine) = AHTR, usually due to ABO incompatibility from clerical error. STOP transfusion immediately, maintain IV access, send samples to blood bank.",keywords:["acute hemolytic","abo incompatibility","clerical error","hemoglobinuria"]},
+  {id:3,cat:"BB",type:"scenario",stem:"A patient's antibody panel shows reactions ONLY at AHG phase. All Jka-positive cells react; all Jka-negative cells are non-reactive. The autocontrol is negative. The patient was transfused 2 years ago.",q:"What antibody is identified and why is it clinically important?",choices:["Anti-Lea — causes immediate hemolysis","Anti-Jka — causes delayed hemolytic transfusion reactions","Anti-M — causes HDFN","Anti-K — causes febrile reactions"],answer:1,explain:"Anti-Jka is IgG (reacts at AHG), shows dosage, and is notorious for dropping to undetectable levels then causing DELAYED hemolytic transfusion reactions upon re-exposure. 'Kidd will Kill you and you won't see it coming.'",keywords:["jka","kidd","delayed","anamnestic","ahg"]},
+  {id:4,cat:"BB",type:"recall",stem:"Blood component storage requirements.",q:"At what temperature and with what special condition must platelets be stored?",choices:["1-6°C, no agitation","20-24°C with continuous gentle agitation","-18°C or colder","20-24°C without agitation"],answer:1,explain:"Platelets are stored at 20-24°C (room temperature) with continuous gentle agitation. Shelf life = 5 days. This is why platelets carry the highest risk of bacterial contamination — room temp promotes bacterial growth.",keywords:["20","24","room temperature","agitation","5 days"]},
+  {id:5,cat:"BB",type:"scenario",stem:"A patient with a history of anaphylactic transfusion reactions is found to be IgA-deficient with anti-IgA antibodies. She needs a platelet transfusion.",q:"What product modification should be used?",choices:["Irradiated platelets","Leukoreduced platelets","Washed platelets","Volume-reduced platelets"],answer:2,explain:"Washing removes plasma proteins including IgA. For IgA-deficient patients with anti-IgA, washed components or products from IgA-deficient donors prevent anaphylaxis. Irradiation prevents TA-GVHD. Leukoreduction prevents febrile reactions and CMV transmission.",keywords:["washed","iga","plasma","anaphylaxis","remove"]},
+  {id:6,cat:"BB",type:"recall",stem:"Enzyme treatment effects on blood group antigens.",q:"Which blood group antigens are DESTROYED by ficin/papain enzyme treatment?",choices:["Rh and Kidd","MNS (M, N, S, s) and Duffy (Fya, Fyb)","Kell and Lutheran","Lewis and P1"],answer:1,explain:"Enzymes DESTROY: M, N, S, s (MNS system) and Fya, Fyb (Duffy). Enzymes ENHANCE: Rh, Kidd, Lewis, P1, I. UNAFFECTED: Kell. Mnemonic: 'Enzymes Destroy My Fly Safely' — MNS and Fy(Duffy) are destroyed.",keywords:["mns","duffy","fya","destroy","m n s"]},
+  {id:7,cat:"BB",type:"scenario",stem:"A patient develops respiratory distress, bilateral pulmonary infiltrates, and hypoxemia 4 hours into a plasma transfusion. Blood pressure is normal/low. BNP is normal.",q:"What is the most likely reaction?",choices:["TACO — give diuretics","TRALI — do NOT give diuretics","Anaphylaxis — give epinephrine","Bacterial contamination — give antibiotics"],answer:1,explain:"TRALI = non-cardiogenic pulmonary edema caused by donor antibodies to recipient WBC antigens. Key vs TACO: normal/low BP (TACO=hypertension), normal BNP (TACO=elevated BNP). Do NOT give diuretics — this is not fluid overload.",keywords:["trali","non-cardiogenic","donor antibodies","normal bnp","no diuretics"]},
+  {id:8,cat:"BB",type:"scenario",stem:"A massively bleeding trauma patient arrives in the ER. Blood type is unknown. No time for crossmatch.",q:"What blood product should be released for emergency transfusion?",choices:["Group A, Rh-negative RBCs","Group O, Rh-negative RBCs","Group AB, Rh-positive RBCs","Type-specific uncrossmatched RBCs"],answer:1,explain:"Group O Rh-negative RBCs are the universal emergency product when patient's blood type is unknown. Rh-negative preferred especially for females of childbearing potential. For plasma: Group AB is the universal donor (no anti-A or anti-B).",keywords:["group o","rh negative","universal","emergency"]},
+  {id:9,cat:"BB",type:"scenario",stem:"A newborn has a positive DAT, elevated indirect bilirubin, and reticulocytosis. Mother is Group O Rh-positive. Baby is Group A Rh-positive.",q:"What is the most likely cause?",choices:["Rh HDFN","ABO HDFN","Autoimmune hemolytic anemia","Sepsis"],answer:1,explain:"Group O mothers have IgG anti-A,B that crosses the placenta. ABO HDFN is usually MILD. Spherocytes are the hallmark finding on the newborn's smear. Rh HDFN is ruled out because mother is Rh-positive.",keywords:["abo","group o mother","igg anti-a","spherocytes","mild"]},
+  {id:10,cat:"BB",type:"scenario",stem:"A bone marrow transplant recipient develops pancytopenia, skin rash, liver dysfunction, and diarrhea 10 days after receiving non-irradiated platelets.",q:"What complication occurred and how is it prevented?",choices:["TRALI — use male-only donors","TA-GVHD — irradiate all cellular blood components","Bacterial contamination — pathogen reduction","Allergic reaction — premedicate"],answer:1,explain:"TA-GVHD: donor T-lymphocytes engraft and attack immunocompromised host. >90% fatal. Prevention: gamma irradiation (≥25 Gy) of all cellular components for at-risk patients. Presents 4-30 days post-transfusion.",keywords:["ta-gvhd","irradiat","t-lymphocyte","engraft","fatal"]},
+
+  // ===== CHEMISTRY =====
+  {id:11,cat:"CHEM",type:"scenario",stem:"A 55-year-old diabetic patient has an HbA1c of 6.2%. However, the patient reports frequent hyperglycemia with home glucose readings often above 250 mg/dL.",q:"What could cause a falsely decreased HbA1c despite poor glucose control?",choices:["Iron deficiency anemia","Hemolytic anemia","Hypothyroidism","Dehydration"],answer:1,explain:"Hemolytic anemia shortens RBC lifespan → less time for glycation → falsely LOW HbA1c. Conditions that prolong RBC life (iron deficiency, splenectomy) cause falsely ELEVATED HbA1c.",keywords:["hemolytic","rbc lifespan","shortened","falsely low","glycation"]},
+  {id:12,cat:"CHEM",type:"scenario",stem:"ABG results: pH 7.28, pCO2 55 mmHg, HCO3- 26 mmol/L, pO2 58 mmHg.",q:"What is this patient's acid-base status?",choices:["Metabolic acidosis, uncompensated","Respiratory acidosis, uncompensated","Respiratory acidosis, partially compensated","Mixed acidosis"],answer:1,explain:"pH 7.28=acidosis. pCO2 55=elevated→respiratory cause. HCO3- 26=normal (23-29)→kidneys haven't compensated yet. If HCO3- were >29, it would be partially compensated.",keywords:["respiratory acidosis","uncompensated","pco2 elevated","hco3 normal"]},
+  {id:13,cat:"CHEM",type:"scenario",stem:"Total bilirubin 14.2 mg/dL, Direct bilirubin 1.1 mg/dL, LD elevated, haptoglobin <10 mg/dL, reticulocyte count 9.5%.",q:"What type of jaundice and most likely cause?",choices:["Obstructive (posthepatic) jaundice","Prehepatic jaundice — hemolytic anemia","Hepatocellular jaundice","Gilbert syndrome"],answer:1,explain:"Predominantly UNCONJUGATED bilirubin (14.2-1.1=13.1 indirect) + ↑LD + ↓haptoglobin + ↑reticulocytes = hemolysis (prehepatic). Unconjugated bilirubin is albumin-bound and NEVER appears in urine.",keywords:["prehepatic","hemolytic","unconjugated","indirect","haptoglobin"]},
+  {id:14,cat:"CHEM",type:"scenario",stem:"Lipid panel: Total cholesterol 280, HDL 40, Triglycerides 180 mg/dL.",q:"Calculate the LDL using the Friedewald equation.",choices:["204 mg/dL","240 mg/dL","160 mg/dL","Cannot be calculated"],answer:0,explain:"LDL = Total Chol - HDL - (TG/5) = 280-40-(180/5) = 280-40-36 = 204 mg/dL. Only valid when TG <400 and patient is fasting.",keywords:["204","friedewald","total minus hdl minus tg"]},
+  {id:15,cat:"CHEM",type:"scenario",stem:"A patient is found unconscious. Labs: pH 7.18, anion gap 28, glucose 45 mg/dL, osmol gap elevated. Urine shows envelope-shaped crystals.",q:"What is the most likely toxicologic cause?",choices:["Methanol poisoning","Ethylene glycol poisoning","Salicylate overdose","Diabetic ketoacidosis"],answer:1,explain:"High anion gap + elevated osmol gap + calcium oxalate crystals (envelope shape) = ethylene glycol. Metabolized to oxalic acid → CaOx crystals → renal failure. Methanol=blindness (formic acid). DKA=HIGH glucose.",keywords:["ethylene glycol","calcium oxalate","osmol gap","anion gap","envelope"]},
+  {id:16,cat:"CHEM",type:"scenario",stem:"TSH = 18.5 mIU/L (ref: 0.4-4.0). Free T4 = 0.2 ng/dL (ref: 0.8-1.8). Patient has fatigue, weight gain, cold intolerance.",q:"What is the diagnosis?",choices:["Graves' disease","Primary hypothyroidism (Hashimoto's)","Secondary hypothyroidism","Subclinical hypothyroidism"],answer:1,explain:"↑TSH + ↓Free T4 = primary hypothyroidism. Thyroid is failing → pituitary compensates with high TSH. Most common cause: Hashimoto's thyroiditis (anti-TPO, anti-thyroglobulin antibodies).",keywords:["primary hypothyroidism","hashimoto","anti-tpo","thyroglobulin"]},
+  {id:17,cat:"CHEM",type:"recall",stem:"Cardiac biomarker timing.",q:"Which cardiac marker rises EARLIEST and which is MOST SPECIFIC for MI?",choices:["CK-MB earliest, BNP most specific","Myoglobin earliest, Troponin I/T most specific","Troponin earliest, CK-MB most specific","BNP earliest, Troponin most specific"],answer:1,explain:"Myoglobin rises in 1-3 hours (earliest) but NOT specific — found in all muscle. Troponin rises at 3-6 hours but is MOST SPECIFIC for myocardial injury. BNP is for heart FAILURE, not MI.",keywords:["myoglobin","earliest","troponin","specific"]},
+  {id:18,cat:"CHEM",type:"scenario",stem:"Suspected insulinoma. Fasting glucose 38 mg/dL, insulin elevated, C-peptide elevated.",q:"How does C-peptide differentiate insulinoma from exogenous insulin injection?",choices:["Both show the same pattern","Exogenous insulin → LOW C-peptide with HIGH insulin","Insulinoma → LOW insulin","C-peptide is unrelated"],answer:1,explain:"C-peptide is co-secreted with endogenous insulin. Insulinoma: BOTH insulin and C-peptide HIGH. Exogenous injection: insulin HIGH but C-peptide LOW (injected insulin has no C-peptide and suppresses endogenous production).",keywords:["c-peptide","low","exogenous","co-secreted","endogenous"]},
+  {id:19,cat:"CHEM",type:"recall",stem:"Iron studies interpretation.",q:"In iron deficiency anemia, what is the expected pattern?",choices:["↓Iron, ↑TIBC, ↓Ferritin","↓Iron, ↓TIBC, ↑Ferritin","↑Iron, ↓TIBC, ↑Ferritin","Normal iron, ↑TIBC, ↓Ferritin"],answer:0,explain:"IDA: ↓serum iron, ↑TIBC (body upregulates transferrin), ↓ferritin (best single indicator of iron stores). Compare anemia of chronic disease: ↓iron, ↓/normal TIBC, ↑/normal ferritin (iron 'trapped' in storage).",keywords:["decreased iron","increased tibc","decreased ferritin"]},
+  {id:20,cat:"CHEM",type:"scenario",stem:"Cherry-red skin color patient found in garage with car running. Pulse oximetry reads 98%.",q:"What test should be ordered and why is pulse ox unreliable?",choices:["Standard ABG","CO-oximetry — pulse ox reads COHb as OxyHb","Standard hemoglobin","Methemoglobin level"],answer:1,explain:"Carbon monoxide poisoning. Standard pulse ox CANNOT distinguish carboxyhemoglobin from oxyhemoglobin — reads FALSELY NORMAL. Must use CO-oximetry for COHb, OxyHb, MetHb, DeoxyHb.",keywords:["co-oximetry","carboxyhemoglobin","pulse ox","falsely normal","carbon monoxide"]},
+
+  // ===== HEMATOLOGY =====
+  {id:21,cat:"HEM",type:"scenario",stem:"4-year-old with pallor, bone pain, hepatosplenomegaly. WBC 92×10³, Hgb 5.8, Plt 18×10³. Small blasts, no granules, no Auer rods. Flow: CD10+, CD19+, TdT+, MPO-negative.",q:"Most likely diagnosis?",choices:["Acute myeloid leukemia","B-cell acute lymphoblastic leukemia (B-ALL)","Chronic myeloid leukemia","Burkitt lymphoma"],answer:1,explain:"Child + lymphoblasts + CD10(CALLA), CD19(B-cell), TdT+(immature lymphoid), MPO-negative = B-ALL. Most common childhood malignancy, peak ages 2-5. AML would be MPO+ with CD13/CD33 and possibly Auer rods.",keywords:["b-all","lymphoblastic","cd10","cd19","tdt","childhood"]},
+  {id:22,cat:"HEM",type:"scenario",stem:"WBC 145×10³. Full granulocyte maturation spectrum with basophilia. LAP score is 0. BCR-ABL1 fusion gene detected.",q:"What is the diagnosis?",choices:["Leukemoid reaction","Chronic myeloid leukemia (CML)","Acute myeloid leukemia","Polycythemia vera"],answer:1,explain:"Full maturation spectrum + basophilia + LOW/zero LAP + BCR-ABL1 positive [t(9;22) Philadelphia chromosome] = CML. A leukemoid reaction has HIGH LAP score. CML progresses through accelerated phase to blast crisis.",keywords:["cml","philadelphia","bcr-abl","lap score low","basophilia"]},
+  {id:23,cat:"HEM",type:"scenario",stem:"Schistocytes on smear. Platelets 22×10³, LD elevated, haptoglobin <10, PT normal, PTT normal, creatinine 4.8 mg/dL.",q:"Most likely diagnosis?",choices:["DIC","TTP/HUS","Iron deficiency anemia","AIHA"],answer:1,explain:"Schistocytes + thrombocytopenia + hemolysis (↑LD, ↓haptoglobin) + NORMAL PT/PTT + renal failure = TTP/HUS. In DIC, PT and PTT are BOTH prolonged with ↓fibrinogen and ↑D-dimer.",keywords:["ttp","hus","schistocytes","normal pt ptt","microangiopathic"]},
+  {id:24,cat:"HEM",type:"scenario",stem:"Southeast Asian woman: Hgb 10.0, MCV 64, RDW 13.5% (normal), iron studies normal, HbA2 = 5.6%.",q:"Most likely diagnosis?",choices:["Iron deficiency anemia","Beta-thalassemia minor (trait)","Alpha-thalassemia trait","Sideroblastic anemia"],answer:1,explain:"Microcytic + NORMAL iron studies + NORMAL RDW (uniform small cells) + ELEVATED HbA2 (>3.5%) = beta-thalassemia minor. Alpha-thal trait does NOT elevate HbA2. IDA has elevated RDW (anisocytosis).",keywords:["beta-thalassemia","hba2","elevated","normal rdw","normal iron"]},
+  {id:25,cat:"HEM",type:"scenario",stem:"AML bone marrow shows blasts packed with multiple Auer rods ('faggot cells'). Patient has DIC with ↑PT, ↑PTT, ↓fibrinogen, ↑D-dimer.",q:"What subtype and specific treatment?",choices:["AML with t(8;21) — standard chemo","APL with t(15;17) — ATRA","AML with inv(16) — high-dose cytarabine","AML with t(9;11) — targeted therapy"],answer:1,explain:"Multiple Auer rods (faggot cells) + DIC = APL with t(15;17) PML-RARA. Medical EMERGENCY. Treat with ATRA (all-trans retinoic acid) + arsenic trioxide to induce differentiation. Best prognosis of all AMLs if treated promptly.",keywords:["apl","t(15;17)","atra","pml-rara","emergency","faggot cells"]},
+  {id:26,cat:"HEM",type:"scenario",stem:"Prolonged PTT (55 sec). PT normal. Mixing study does NOT correct. Patient has recurrent DVTs, not bleeding.",q:"Most likely diagnosis?",choices:["Hemophilia A","von Willebrand disease","Lupus anticoagulant","Factor XII deficiency"],answer:2,explain:"Prolonged PTT + does NOT correct on mixing = inhibitor. Thrombosis (not bleeding) = lupus anticoagulant. Paradox: prolongs PTT in vitro but causes CLOTTING in vivo. Antiphospholipid antibody.",keywords:["lupus anticoagulant","inhibitor","does not correct","thrombosis","antiphospholipid"]},
+  {id:27,cat:"HEM",type:"scenario",stem:"↑PT, ↑PTT, Platelets 45×10³, fibrinogen 85 mg/dL (ref 200-400), D-dimer markedly elevated, schistocytes.",q:"Most likely diagnosis?",choices:["Hemophilia A","DIC","TTP","Liver disease"],answer:1,explain:"↑PT + ↑PTT + ↓platelets + ↓fibrinogen + ↑D-dimer + schistocytes = classic DIC. ALL factors AND platelets consumed in widespread microvascular clotting with secondary fibrinolysis. TTP has NORMAL PT/PTT.",keywords:["dic","consumption","all factors","d-dimer","fibrinogen low"]},
+  {id:28,cat:"HEM",type:"scenario",stem:"Mucocutaneous bleeding, menorrhagia. PT normal, PTT slightly prolonged, platelets normal, bleeding time prolonged. Ristocetin cofactor activity decreased.",q:"Most likely diagnosis?",choices:["Hemophilia A","von Willebrand disease","Bernard-Soulier syndrome","Glanzmann thrombasthenia"],answer:1,explain:"vWF stabilizes Factor VIII (slightly prolonged PTT) and mediates platelet adhesion (prolonged bleeding time). ↓ristocetin cofactor = ↓vWF function. vWD is the MOST COMMON inherited bleeding disorder.",keywords:["von willebrand","vwd","ristocetin","bleeding time","most common inherited"]},
+  {id:29,cat:"HEM",type:"recall",stem:"Hemoglobin electrophoresis at alkaline pH.",q:"Migration order from slowest to fastest toward the anode?",choices:["A → F → S → C","C → S → F → A","A → S → F → C","F → A → S → C"],answer:1,explain:"Alkaline pH (cellulose acetate): C (slowest) → S → F → A (fastest). Mnemonic: 'Careful Slow Fleas Ahead.' HbS and HbD co-migrate; HbC and HbE co-migrate at alkaline pH — use ACID pH to separate.",keywords:["c s f a","careful slow fleas","alkaline","cellulose acetate"]},
+  {id:30,cat:"HEM",type:"recall",stem:"Granulocyte maturation.",q:"Where do primary (azurophilic) and secondary (specific) granules first appear?",choices:["Myeloblast / Promyelocyte","Promyelocyte / Myelocyte","Myelocyte / Metamyelocyte","Band / Segment"],answer:1,explain:"Primary granules = promyelocyte (defining feature). Secondary granules = myelocyte. Cell stops dividing at metamyelocyte (post-mitotic). Nucleus is extruded in erythroid line at orthochromic normoblast → reticulocyte.",keywords:["promyelocyte","primary","myelocyte","secondary","specific"]},
+
+  // ===== MICROBIOLOGY =====
+  {id:31,cat:"MICRO",type:"scenario",stem:"Sputum culture: mucoid lactose-fermenting colonies on MacConkey. GNR, non-motile, indole-negative, urease-positive, prominent capsule.",q:"What organism?",choices:["E. coli","Klebsiella pneumoniae","Pseudomonas aeruginosa","Enterobacter cloacae"],answer:1,explain:"Mucoid + lactose+ + GNR + non-motile + indole- + capsule = Klebsiella pneumoniae. E. coli is indole+. Pseudomonas is a non-fermenter. Enterobacter is MOTILE. Klebsiella produces 'currant jelly' sputum.",keywords:["klebsiella","mucoid","non-motile","capsule","indole negative"]},
+  {id:32,cat:"MICRO",type:"scenario",stem:"Blood culture: GPC in clusters. Catalase+, coagulase+, beta-hemolytic, mannitol fermenter (yellow on MSA).",q:"Organism and MRSA confirmatory test?",choices:["S. epidermidis — novobiocin","S. aureus — cefoxitin disk or mecA PCR","Enterococcus — bile esculin","S. saprophyticus — novobiocin resistance"],answer:1,explain:"GPC clusters + catalase+ + coagulase+ + beta-hemolytic + mannitol = S. aureus. MRSA: cefoxitin disk (zone ≤21mm=MRSA), mecA PCR, or PBP2a latex agglutination.",keywords:["s. aureus","mrsa","cefoxitin","meca","pbp2a"]},
+  {id:33,cat:"MICRO",type:"scenario",stem:"Child with bloody diarrhea. Non-sorbitol-fermenting colorless colonies on SMAC agar.",q:"What organism and serious complication?",choices:["Salmonella — typhoid fever","E. coli O157:H7 — HUS","Shigella — GBS","C. difficile — toxic megacolon"],answer:1,explain:"E. coli O157:H7 does NOT ferment sorbitol (colorless on SMAC). Produces Shiga-like toxin → HUS (hemolytic anemia + thrombocytopenia + renal failure), especially in children. Do NOT treat with antibiotics — may worsen toxin release.",keywords:["o157:h7","sorbitol negative","hus","shiga toxin","verotoxin"]},
+  {id:34,cat:"MICRO",type:"scenario",stem:"Tissue biopsy from diabetic with rhinocerebral disease: broad ribbon-like non-septate hyphae branching at 90° angles.",q:"Most likely organism?",choices:["Aspergillus fumigatus","Mucor/Rhizopus","Candida albicans","Histoplasma capsulatum"],answer:1,explain:"Broad, ASEPTATE hyphae + 90° branching + diabetic/DKA + rhinocerebral = Mucormycosis. Compare Aspergillus: SEPTATE hyphae with 45° DICHOTOMOUS branching. Mucormycosis has vascular invasion → tissue necrosis.",keywords:["mucor","rhizopus","aseptate","pauciseptate","90 degree","diabetic"]},
+  {id:35,cat:"MICRO",type:"scenario",stem:"Alpha-hemolytic GPC diplococci from CSF. Optochin-sensitive. Bile-soluble.",q:"What organism?",choices:["Viridans streptococci","Streptococcus pneumoniae","Enterococcus faecalis","Streptococcus agalactiae"],answer:1,explain:"Alpha-hemolytic + lancet diplococci + optochin-SENSITIVE + bile-SOLUBLE = S. pneumoniae. Viridans is optochin-RESISTANT, bile-INSOLUBLE. Quellung reaction confirms capsule.",keywords:["pneumoniae","optochin sensitive","bile soluble","quellung","lancet"]},
+  {id:36,cat:"MICRO",type:"scenario",stem:"Throat culture: beta-hemolytic GPC in chains. Bacitracin-sensitive, PYR-positive.",q:"Organism and non-suppurative complications?",choices:["Group B Strep — neonatal sepsis","Group A Strep (S. pyogenes) — rheumatic fever and glomerulonephritis","Enterococcus — UTI","S. pneumoniae — meningitis"],answer:1,explain:"Beta-hemolytic + chains + bacitracin-SENSITIVE + PYR+ = Group A Strep (S. pyogenes). Non-suppurative: acute rheumatic fever + post-streptococcal glomerulonephritis. ASO titer confirms recent infection.",keywords:["pyogenes","group a","bacitracin sensitive","rheumatic fever","glomerulonephritis"]},
+  {id:37,cat:"MICRO",type:"scenario",stem:"Dimorphic fungus: barrel-shaped arthroconidia at 25°C. In tissue: large spherules containing endospores.",q:"Organism and endemic region?",choices:["Histoplasma — Ohio/Mississippi valleys","Coccidioides immitis — Southwestern US deserts","Blastomyces — Great Lakes","Sporothrix — worldwide"],answer:1,explain:"Arthroconidia (mold) + spherules with endospores (tissue) = Coccidioides immitis. Endemic to SW US (California/Arizona deserts). Valley fever. Handle at BSL-3. Relevant to the Vandenberg/Santa Maria area!",keywords:["coccidioides","spherules","endospores","arthroconidia","southwest","valley fever"]},
+  {id:38,cat:"MICRO",type:"scenario",stem:"GN coccobacillus requires BOTH X (hemin) and V (NAD) factors. Grows on chocolate agar. Satellite colonies around S. aureus on BAP.",q:"What organism?",choices:["Neisseria meningitidis","Haemophilus influenzae","Bordetella pertussis","Legionella pneumophila"],answer:1,explain:"Requires X AND V + chocolate agar + satellitism around S. aureus = H. influenzae. S. aureus lyses RBCs on BAP releasing V factor. H. parainfluenzae requires V only. Legionella requires BCYE (cysteine + iron).",keywords:["haemophilus","x and v","hemin","nad","satellite","chocolate agar"]},
+  {id:39,cat:"MICRO",type:"scenario",stem:"D-shaped flattening of clindamycin zone adjacent to erythromycin disk on S. aureus susceptibility.",q:"What does this indicate?",choices:["Report clindamycin susceptible","Inducible clindamycin resistance (erm gene) — report resistant","ESBL production","Artifact — ignore"],answer:1,explain:"D-zone test positive = inducible clindamycin resistance via erm gene. Erythromycin induces methylase that also causes clindamycin resistance. Report clindamycin as RESISTANT — drug will fail in vivo.",keywords:["d-zone","inducible","erm gene","report resistant","clindamycin"]},
+  {id:40,cat:"MICRO",type:"recall",stem:"Neisseria carbohydrate utilization.",q:"N. gonorrhoeae ferments ____ only. N. meningitidis ferments ____ and ____.",choices:["Glucose only / Glucose and maltose","Maltose only / Glucose and lactose","Glucose and maltose / all three","Glucose only / Glucose, maltose, lactose"],answer:0,explain:"Gonorrhoeae = glucose ONLY. Meningitidis = glucose AND maltose. Lactamica = glucose + maltose + lactose. All Neisseria are oxidase-positive GN diplococci.",keywords:["glucose only","glucose maltose","gonorrhoeae","meningitidis"]},
+
+  // ===== UA & BODY FLUIDS =====
+  {id:41,cat:"UA",type:"scenario",stem:"22-year-old male: dark cola urine, periorbital edema, 2 weeks post-sore throat. UA: Blood 3+, Protein 2+, RBC casts present.",q:"Most likely diagnosis?",choices:["UTI","Post-streptococcal glomerulonephritis","Nephrotic syndrome","Acute tubular necrosis"],answer:1,explain:"RBC CASTS are pathognomonic for glomerulonephritis. 2 weeks post-strep + dark urine + edema + hypertension = post-strep GN (Type III hypersensitivity). Nephrotic = fatty casts + massive proteinuria. ATN = granular 'muddy brown' casts.",keywords:["rbc casts","glomerulonephritis","post-strep","2 weeks","pathognomonic"]},
+  {id:42,cat:"UA",type:"scenario",stem:"Dipstick: Blood 2+. Microscopy: 0-1 RBCs/HPF.",q:"What explains this discrepancy?",choices:["False-positive from vitamin C","Hemoglobinuria or myoglobinuria","Menstrual contamination","Deteriorated RBCs"],answer:1,explain:"Dipstick detects HEME GROUP — positive for intact RBCs, free hemoglobin, AND myoglobin. Positive dipstick + few/no RBCs on microscopy = free hemoglobin (intravascular hemolysis) or myoglobin (rhabdomyolysis).",keywords:["hemoglobinuria","myoglobinuria","heme","no rbc","free hemoglobin"]},
+  {id:43,cat:"UA",type:"scenario",stem:"CSF: WBC 2800 (92% neutrophils), glucose 18 mg/dL (serum 95), protein 280 mg/dL. Gram stain: GP lancet diplococci.",q:"Type of meningitis and likely organism?",choices:["Viral — enterovirus","Bacterial — Streptococcus pneumoniae","TB — M. tuberculosis","Fungal — Cryptococcus"],answer:1,explain:"Very high WBC with neutrophils + very LOW glucose (<50% serum) + very HIGH protein + positive Gram stain = BACTERIAL meningitis. GP lancet diplococci = S. pneumoniae. Viral = lymphocytes + normal glucose.",keywords:["bacterial","pneumoniae","neutrophils","low glucose","lancet diplococci"]},
+  {id:44,cat:"UA",type:"scenario",stem:"Synovial fluid: WBC 45,000 (85% PMNs). Compensated polarized microscopy: needle-shaped crystals, yellow when parallel to slow vibration direction.",q:"Crystal type and diagnosis?",choices:["CPPD — pseudogout","MSU — gout","Cholesterol — chronic effusion","Hydroxyapatite — calcific tendinitis"],answer:1,explain:"Needle-shaped + NEGATIVELY birefringent (yellow parallel) = monosodium urate = GOUT. Pseudogout (CPPD) = rhomboid + POSITIVELY birefringent (blue parallel). 'Needles are Negative — gout.'",keywords:["msu","gout","needle","negative birefringent","yellow parallel","urate"]},
+  {id:45,cat:"UA",type:"recall",stem:"Urine dipstick interferences.",q:"Ascorbic acid (Vitamin C) causes false-negative results for which tests?",choices:["Protein and ketones","Glucose, blood, bilirubin, and nitrite","Leukocyte esterase and pH","Specific gravity and urobilinogen"],answer:1,explain:"Ascorbic acid is a reducing agent interfering with oxidation-based reactions: glucose (glucose oxidase), blood (pseudoperoxidase), bilirubin (diazo), nitrite (Greiss). One of the MOST tested dipstick interference questions.",keywords:["ascorbic acid","vitamin c","false negative","glucose blood bilirubin nitrite","reducing agent"]},
+  {id:46,cat:"UA",type:"scenario",stem:"CSF tube 1 has significantly more RBCs than tube 4. Supernatant after centrifugation is clear.",q:"Traumatic tap or subarachnoid hemorrhage?",choices:["Subarachnoid hemorrhage","Traumatic tap","Cannot determine","Traumatic tap only if protein normal"],answer:1,explain:"Traumatic tap: RBCs DECREASE tube 1→4 (clearing) + CLEAR supernatant. Subarachnoid hemorrhage: CONSISTENT RBCs across all tubes + XANTHOCHROMIC (yellow) supernatant from in vivo hemoglobin breakdown.",keywords:["traumatic tap","clearing","decrease","clear supernatant","xanthochromia"]},
+  {id:47,cat:"UA",type:"recall",stem:"Urine casts and clinical significance.",q:"Fatty casts and oval fat bodies showing Maltese cross under polarized light are associated with what condition?",choices:["Glomerulonephritis","Pyelonephritis","Nephrotic syndrome","Acute tubular necrosis"],answer:2,explain:"Fatty casts + oval fat bodies (lipid-laden tubular cells) + Maltese cross pattern (cholesterol esters under polarized light) = nephrotic syndrome. Heavy proteinuria (>3.5 g/day) causes lipiduria. RBC casts = GN. WBC casts = pyelonephritis. Granular = ATN.",keywords:["nephrotic","fatty casts","oval fat bodies","maltese cross","proteinuria"]},
+
+  // ===== IMMUNOLOGY =====
+  {id:48,cat:"IMM",type:"scenario",stem:"30-year-old woman: joint pain, butterfly rash, fatigue, oral ulcers. ANA 1:640 homogeneous, anti-dsDNA positive, C3 and C4 decreased.",q:"Diagnosis and why are complement levels low?",choices:["Rheumatoid arthritis","SLE — complement consumed by immune complex deposition","Sjögren syndrome","Drug-induced lupus"],answer:1,explain:"ANA+ + anti-dsDNA (highly specific for SLE) + butterfly rash + ↓C3/C4 = SLE. Complement consumed during immune complex activation (classical pathway: C1q activated by Ag-Ab complexes). Drug-induced lupus = anti-HISTONE antibodies.",keywords:["sle","lupus","anti-dsdna","complement consumed","immune complex"]},
+  {id:49,cat:"IMM",type:"scenario",stem:"HBV serology: HBsAg negative, Anti-HBs negative, Anti-HBc IgM positive, Anti-HBc IgG positive, HBeAg negative.",q:"What stage of infection?",choices:["Acute infection","Chronic infection","Window period","Immune by vaccination"],answer:2,explain:"WINDOW PERIOD: HBsAg cleared but Anti-HBs not yet appeared. Only markers positive = Anti-HBc (IgM=recent). This 'serologic gap' can ONLY be diagnosed by anti-HBc IgM. Vaccination = Anti-HBs ONLY.",keywords:["window period","serologic gap","anti-hbc igm","hbsag cleared","anti-hbs not yet"]},
+  {id:50,cat:"IMM",type:"recall",stem:"Immunoglobulin properties.",q:"Which Ig crosses the placenta? Which is the best complement activator?",choices:["IgA/IgG","IgG/IgM","IgG/IgG","IgM/IgA"],answer:1,explain:"IgG = ONLY Ig crossing placenta (via FcRn receptor). IgM = best complement activator (pentamer, most efficient at classical pathway). If IgM found in NEONATE = active fetal infection (IgM cannot cross placenta).",keywords:["igg","crosses placenta","igm","complement","first antibody"]},
+  {id:51,cat:"IMM",type:"recall",stem:"Hypersensitivity reactions.",q:"A tuberculin skin test (PPD) read at 48-72 hours is which type?",choices:["Type I — Immediate","Type II — Cytotoxic","Type III — Immune complex","Type IV — Delayed/Cell-mediated"],answer:3,explain:"Type IV = delayed-type hypersensitivity = T-cell mediated (NO antibodies). Read 48-72 hrs. Other examples: contact dermatitis (poison ivy), chronic transplant rejection, granulomas. Types I-III use antibodies; Type IV uses T cells only.",keywords:["type iv","delayed","t-cell","48-72 hours","cell-mediated"]},
+  {id:52,cat:"IMM",type:"scenario",stem:"Syphilis reverse algorithm: Treponemal EIA = POSITIVE. Reflex RPR = NEGATIVE.",q:"What is the next step?",choices:["Report as syphilis positive","Report as false positive","Perform a SECOND treponemal test (e.g., TP-PA)","Repeat EIA only"],answer:2,explain:"Reverse algorithm: Screen treponemal → RPR. If RPR negative with positive treponemal screen → second DIFFERENT treponemal test (TP-PA). If second treponemal positive = likely past treated syphilis. Treponemal tests stay positive for life.",keywords:["second treponemal","tp-pa","reverse algorithm","confirmation","discordant"]},
+
+  // ===== LAB OPERATIONS =====
+  {id:53,cat:"LAB",type:"scenario",stem:"Levey-Jennings chart: last 12 QC values progressively increasing, all above the mean. Mean=100, 1SD=3.",q:"Which Westgard rule is violated?",choices:["1-3s","R-4s","10-x (shift/trend)","2-2s"],answer:2,explain:"10+ consecutive values all on SAME SIDE of mean = 10-x violation = systematic error. Progressive upward drift = TREND (deteriorating reagent, aging light source, calibration drift). Action: recalibrate, replace reagents.",keywords:["10-x","shift","trend","systematic error","same side","recalibrate"]},
+  {id:54,cat:"LAB",type:"scenario",stem:"Test sensitivity 95%, specificity 90%, disease prevalence 1% (100 diseased out of 10,000).",q:"Approximate positive predictive value?",choices:["95%","90%","About 9%","About 50%"],answer:2,explain:"TP=95, FP=990 (10% of 9,900). PPV=95/1085≈8.8%. KEY: PPV drops dramatically with low prevalence — even a good test has many false positives when disease is rare. PPV depends on prevalence; sensitivity/specificity do NOT.",keywords:["ppv","low prevalence","false positive","9%","prevalence dependent"]},
+  {id:55,cat:"LAB",type:"recall",stem:"Westgard rules.",q:"Which rule is WARNING only (do NOT reject)?",choices:["1-3s","2-2s","1-2s","R-4s"],answer:2,explain:"1-2s = WARNING only (1 value exceeds ±2SD). Investigate but do NOT reject. All other rules (1-3s, 2-2s, R-4s, 4-1s, 10-x) require REJECTION. 1-3s=random error. 2-2s/4-1s/10-x=systematic error. R-4s=random error.",keywords:["1-2s","warning","do not reject","investigate"]},
+  {id:56,cat:"LAB",type:"recall",stem:"Laboratory safety.",q:"M. tuberculosis cultures must be handled at what biosafety level?",choices:["BSL-1","BSL-2","BSL-3","BSL-4"],answer:2,explain:"BSL-3: agents causing serious/lethal disease via inhalation — M. tuberculosis, Brucella, Francisella, Coccidioides, SARS-CoV-2. Requires biosafety cabinet, restricted access, respiratory protection. BSL-4: Ebola, Marburg (no treatment).",keywords:["bsl-3","inhalation","tuberculosis","biosafety cabinet","restricted"]},
+  {id:57,cat:"LAB",type:"recall",stem:"Beer's Law.",q:"A = εbc means absorbance is directly proportional to what?",choices:["Wavelength and temperature","Concentration and path length","Time and volume","pH and ionic strength"],answer:1,explain:"A=εbc: A=absorbance, ε=molar absorptivity (constant), b=path length (1cm), c=concentration. Absorbance is directly proportional to BOTH concentration and path length. Deviations: stray light, fluorescence, high concentration.",keywords:["concentration","path length","proportional","beer's law","absorptivity"]},
+];
+
+// ==================== APP STATE ====================
+let state = {
+  screen:"home", selectedCats:Object.keys(CATEGORIES), mode:"flashcard",
+  currentIndex:0, flipped:false, selectedAnswer:null, freeResponse:"",
+  frFeedback:null, stats:{correct:0,wrong:0,reviewed:0}, deck:[], showExplanation:false, streak:0
+};
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function setState(updates){Object.assign(state,updates);render()}
+
+function startStudy(){
+  const filtered=Q.filter(q=>state.selectedCats.includes(q.cat));
+  if(!filtered.length)return;
+  setState({deck:shuffle(filtered),currentIndex:0,flipped:false,selectedAnswer:null,
+    freeResponse:"",frFeedback:null,showExplanation:false,stats:{correct:0,wrong:0,reviewed:0},streak:0,screen:"study"});
+}
+
+function toggleCat(cat){
+  const sc=[...state.selectedCats];
+  const idx=sc.indexOf(cat);
+  if(idx>=0)sc.splice(idx,1);else sc.push(cat);
+  setState({selectedCats:sc});
+}
+
+function handleMC(idx){
+  if(state.selectedAnswer!==null)return;
+  const card=state.deck[state.currentIndex];
+  const correct=idx===card.answer;
+  setState({selectedAnswer:idx,showExplanation:true,
+    stats:{...state.stats,correct:state.stats.correct+(correct?1:0),wrong:state.stats.wrong+(correct?0:1),reviewed:state.stats.reviewed+1},
+    streak:correct?state.streak+1:0});
+}
+
+function checkFR(){
+  const card=state.deck[state.currentIndex];
+  const input=state.freeResponse.toLowerCase().trim();
+  if(!input||!card)return;
+  const correctAnswer=card.choices[card.answer].toLowerCase();
+  const kws=card.keywords||[];
+  const answerMatch=input.includes(correctAnswer)||correctAnswer.includes(input);
+  const kwMatches=kws.filter(kw=>input.includes(kw.toLowerCase()));
+  const isCorrect=answerMatch||kwMatches.length>=2;
+  setState({frFeedback:{correct:isCorrect,matched:kwMatches,correctAnswer:card.choices[card.answer]},
+    showExplanation:true,
+    stats:{...state.stats,correct:state.stats.correct+(isCorrect?1:0),wrong:state.stats.wrong+(isCorrect?0:1),reviewed:state.stats.reviewed+1},
+    streak:isCorrect?state.streak+1:0});
+}
+
+function nextCard(){
+  let ni=state.currentIndex+1;
+  let nd=state.deck;
+  if(ni>=nd.length){nd=shuffle(nd);ni=0}
+  setState({currentIndex:ni,deck:nd,flipped:false,selectedAnswer:null,freeResponse:"",frFeedback:null,showExplanation:false});
+}
+
+function e(tag,props,...children){
+  const el=document.createElement(tag);
+  if(props)Object.entries(props).forEach(([k,v])=>{
+    if(k==='style'&&typeof v==='object'){Object.assign(el.style,v)}
+    else if(k.startsWith('on')){el.addEventListener(k.slice(2).toLowerCase(),v)}
+    else if(k==='className'){el.className=v}
+    else if(k==='disabled'){el.disabled=v}
+    else if(k==='placeholder'){el.placeholder=v}
+    else if(k==='value'){el.value=v}
+    else{el.setAttribute(k,v)}
+  });
+  children.flat().forEach(c=>{if(c!=null){el.appendChild(typeof c==='string'?document.createTextNode(c):c)}});
+  return el;
+}
+
+// ==================== RENDER ====================
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const s=state;
+
+  if(s.screen==='home'){renderHome(app);return}
+  if(s.screen==='results'){renderResults(app);return}
+  renderStudy(app);
+}
+
+function renderHome(app){
+  const s=state;
+  const wrap=e('div',{style:{minHeight:'100vh',padding:'0'}});
+
+  // Header
+  const hdr=e('div',{style:{padding:'40px 20px 24px',textAlign:'center',borderBottom:'1px solid rgba(255,255,255,0.06)'}});
+  hdr.appendChild(e('div',{style:{fontSize:'13px',letterSpacing:'3px',textTransform:'uppercase',color:'#64748b',marginBottom:'8px',fontWeight:'600'}},'ASCP BOC Certification'));
+  const h1=e('h1',{style:{fontSize:'28px',fontWeight:'800',margin:'0 0 6px',background:'linear-gradient(135deg,#60a5fa,#a78bfa,#f472b6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',lineHeight:'1.2'}},'MLS(ASCPi) Study Cards');
+  hdr.appendChild(h1);
+  hdr.appendChild(e('div',{style:{fontSize:'14px',color:'#94a3b8',marginTop:'4px'}},`Clinical Scenarios & Review — ${Q.length} cards`));
+  wrap.appendChild(hdr);
+
+  // Mode Select
+  const modeSection=e('div',{style:{padding:'20px 20px 8px'}});
+  modeSection.appendChild(e('div',{style:{fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',color:'#64748b',marginBottom:'10px',fontWeight:'600'}},'Study Mode'));
+  const modeRow=e('div',{style:{display:'flex',gap:'8px'}});
+  [{key:"flashcard",label:"Multiple Choice",icon:"🎯"},{key:"freeresponse",label:"Free Response",icon:"✍️"},{key:"review",label:"Flip Cards",icon:"🔄"}].forEach(m=>{
+    const sel=s.mode===m.key;
+    const btn=e('button',{className:'mode-btn',onClick:()=>setState({mode:m.key}),
+      style:{border:sel?'2px solid #60a5fa':'2px solid rgba(255,255,255,0.08)',
+        background:sel?'rgba(96,165,250,0.12)':'rgba(255,255,255,0.03)',
+        color:sel?'#93c5fd':'#94a3b8'}},
+      e('div',{style:{fontSize:'20px',marginBottom:'4px'}},m.icon),m.label);
+    modeRow.appendChild(btn);
+  });
+  modeSection.appendChild(modeRow);
+  wrap.appendChild(modeSection);
+
+  // Categories
+  const catSection=e('div',{style:{padding:'16px 20px'}});
+  const catHeader=e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}});
+  catHeader.appendChild(e('div',{style:{fontSize:'11px',letterSpacing:'2px',textTransform:'uppercase',color:'#64748b',fontWeight:'600'}},'Categories'));
+  const allSelected=s.selectedCats.length===Object.keys(CATEGORIES).length;
+  catHeader.appendChild(e('button',{onClick:()=>setState({selectedCats:allSelected?[]:Object.keys(CATEGORIES)}),
+    style:{background:'none',border:'none',color:'#60a5fa',fontSize:'12px',cursor:'pointer',fontWeight:'600'}},
+    allSelected?'Clear All':'Select All'));
+  catSection.appendChild(catHeader);
+
+  const catList=e('div',{style:{display:'flex',flexDirection:'column',gap:'6px'}});
+  Object.entries(CATEGORIES).forEach(([key,cat])=>{
+    const count=Q.filter(q=>q.cat===key).length;
+    const sel=s.selectedCats.includes(key);
+    const row=e('button',{className:'cat-row',onClick:()=>toggleCat(key),
+      style:{border:sel?`1px solid ${cat.color}55`:'1px solid rgba(255,255,255,0.06)',
+        background:sel?`${cat.color}15`:'rgba(255,255,255,0.02)'}},
+      e('span',{style:{fontSize:'18px',width:'24px',textAlign:'center'}},cat.icon),
+      e('div',{style:{flex:'1'}},
+        e('div',{style:{color:sel?'#e2e8f0':'#94a3b8',fontSize:'14px',fontWeight:'600'}},cat.name),
+        e('div',{style:{color:'#64748b',fontSize:'11px'}},`${cat.weight} of exam · ${count} cards`)),
+      e('div',{className:'cat-check',style:{border:sel?`2px solid ${cat.color}`:'2px solid #334155',background:sel?cat.color:'transparent'}},sel?'✓':''));
+    catList.appendChild(row);
+  });
+  catSection.appendChild(catList);
+  wrap.appendChild(catSection);
+
+  // Start
+  const startSection=e('div',{style:{padding:'12px 20px 40px'}});
+  const total=Q.filter(q=>s.selectedCats.includes(q.cat)).length;
+  const startBtn=e('button',{className:'start-btn',onClick:startStudy,disabled:total===0},
+    `Start Studying — ${total} Cards`);
+  startSection.appendChild(startBtn);
+  wrap.appendChild(startSection);
+  app.appendChild(wrap);
+}
+
+function renderResults(app){
+  const s=state;
+  const pct=s.stats.reviewed>0?Math.round(s.stats.correct/s.stats.reviewed*100):0;
+  const wrap=e('div',{style:{minHeight:'100vh',padding:'40px 20px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}});
+  wrap.appendChild(e('div',{style:{fontSize:'48px',marginBottom:'16px'}},pct>=80?'🌟':pct>=60?'💪':'📚'));
+  const h2=e('h2',{style:{fontSize:'24px',fontWeight:'800',marginBottom:'4px',background:'linear-gradient(135deg,#60a5fa,#a78bfa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}},'Session Complete');
+  wrap.appendChild(h2);
+  wrap.appendChild(e('div',{style:{color:'#94a3b8',marginBottom:'32px'}},`${s.stats.reviewed} cards reviewed`));
+
+  const statRow=e('div',{style:{display:'flex',gap:'16px',marginBottom:'32px',width:'100%',maxWidth:'320px'}});
+  [{label:'Correct',val:s.stats.correct,color:'#22c55e'},{label:'Wrong',val:s.stats.wrong,color:'#ef4444'},{label:'Score',val:`${pct}%`,color:'#60a5fa'}].forEach(st=>{
+    statRow.appendChild(e('div',{className:'result-stat'},e('div',{className:'result-val',style:{color:st.color}},String(st.val)),e('div',{className:'result-label'},st.label)));
+  });
+  wrap.appendChild(statRow);
+
+  const btnRow=e('div',{style:{display:'flex',gap:'10px',width:'100%',maxWidth:'320px'}});
+  btnRow.appendChild(e('button',{onClick:()=>setState({screen:'home'}),style:{flex:'1',padding:'14px',borderRadius:'12px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#e2e8f0',fontSize:'14px',fontWeight:'600',cursor:'pointer'}},'Change Topics'));
+  btnRow.appendChild(e('button',{onClick:startStudy,style:{flex:'1',padding:'14px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#3b82f6,#8b5cf6)',color:'white',fontSize:'14px',fontWeight:'600',cursor:'pointer'}},'Study Again'));
+  wrap.appendChild(btnRow);
+  app.appendChild(wrap);
+}
+
+function renderStudy(app){
+  const s=state;
+  const card=s.deck[s.currentIndex];
+  if(!card)return;
+  const cat=CATEGORIES[card.cat];
+  const wrap=e('div',{style:{minHeight:'100vh',display:'flex',flexDirection:'column'}});
+
+  // Top bar
+  const bar=e('div',{className:'top-bar'});
+  bar.appendChild(e('button',{className:'top-btn',onClick:()=>setState({screen:'home'})},'← Menu'));
+  const statsDiv=e('div',{className:'stats-row'});
+  if(s.streak>=3)statsDiv.appendChild(e('span',{style:{color:'#f59e0b'},className:'streak-pulse'},`🔥 ${s.streak}`));
+  statsDiv.appendChild(e('span',{style:{color:'#22c55e'}},`✓${s.stats.correct}`));
+  statsDiv.appendChild(e('span',{style:{color:'#ef4444'}},`✗${s.stats.wrong}`));
+  statsDiv.appendChild(e('span',{style:{color:'#64748b'}},`${s.currentIndex+1}/${s.deck.length}`));
+  bar.appendChild(statsDiv);
+  bar.appendChild(e('button',{className:'top-btn',onClick:()=>setState({screen:'results'})},'End'));
+  wrap.appendChild(bar);
+
+  // Progress
+  const progTrack=e('div',{className:'progress-track'});
+  progTrack.appendChild(e('div',{className:'progress-fill',style:{width:`${(s.currentIndex+1)/s.deck.length*100}%`,background:`linear-gradient(90deg,${cat.color},${cat.color}aa)`}}));
+  wrap.appendChild(progTrack);
+
+  // Card area
+  const area=e('div',{className:'card-area fade-up'});
+
+  // Badges
+  const badges=e('div',{className:'badge-row'});
+  badges.appendChild(e('span',{className:'cat-badge',style:{background:`${cat.color}20`,color:cat.color}},`${cat.icon} ${cat.name}`));
+  badges.appendChild(e('span',{className:'type-badge',style:{background:card.type==='scenario'?'rgba(251,191,36,0.15)':'rgba(96,165,250,0.15)',color:card.type==='scenario'?'#fbbf24':'#60a5fa'}},card.type==='scenario'?'Scenario':'Recall'));
+  area.appendChild(badges);
+
+  // Card box
+  const box=e('div',{className:'card-box'});
+
+  // Stem + Question (hide when flipped in review)
+  if(card.stem&&!(s.mode==='review'&&s.flipped)){
+    box.appendChild(e('div',{className:'stem-box',style:{borderLeft:`3px solid ${cat.color}40`}},card.stem));
+  }
+  if(!(s.mode==='review'&&s.flipped)){
+    box.appendChild(e('div',{className:'question-text'},card.q));
+  }
+
+  // Review mode
+  if(s.mode==='review'){
+    if(s.flipped){
+      box.appendChild(e('div',{style:{fontSize:'12px',textTransform:'uppercase',letterSpacing:'1.5px',color:'#22c55e',fontWeight:'700',marginBottom:'8px'}},'Answer'));
+      box.appendChild(e('div',{style:{fontSize:'15px',color:'#86efac',fontWeight:'600',marginBottom:'16px',lineHeight:'1.5'}},card.choices[card.answer]));
+      box.appendChild(e('div',{style:{fontSize:'13px',color:'#94a3b8',lineHeight:'1.7',padding:'12px',borderRadius:'10px',background:'rgba(255,255,255,0.03)'}},card.explain));
+    }else{
+      box.appendChild(e('button',{className:'reveal-btn',onClick:()=>setState({flipped:true,stats:{...s.stats,reviewed:s.stats.reviewed+1}})},'Tap to Reveal Answer'));
+    }
+  }
+
+  // Multiple choice
+  if(s.mode==='flashcard'){
+    const choiceWrap=e('div',{});
+    card.choices.forEach((ch,idx)=>{
+      const isSel=s.selectedAnswer===idx;
+      const isCorr=idx===card.answer;
+      const show=s.selectedAnswer!==null;
+      let cls='choice-btn';
+      if(show&&isCorr)cls+=' correct';
+      else if(show&&isSel&&!isCorr)cls+=' wrong';
+      let lCls='choice-letter';
+      if(show&&isCorr)lCls+=' correct';
+      else if(show&&isSel&&!isCorr)lCls+=' wrong';
+      const btn=e('button',{className:cls,disabled:show,onClick:()=>handleMC(idx)},
+        e('span',{className:lCls},show&&isCorr?'✓':show&&isSel?'✗':String.fromCharCode(65+idx)),
+        e('span',{},ch));
+      choiceWrap.appendChild(btn);
+    });
+    box.appendChild(choiceWrap);
+  }
+
+  // Free response
+  if(s.mode==='freeresponse'){
+    const frWrap=e('div',{});
+    const ta=e('textarea',{className:'fr-textarea',placeholder:"Type your answer... Include the diagnosis, key reasoning, or best answer choice.",
+      disabled:s.frFeedback!==null,value:s.freeResponse});
+    ta.addEventListener('input',ev=>{state.freeResponse=ev.target.value});
+    ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey&&!s.frFeedback){ev.preventDefault();checkFR()}});
+    frWrap.appendChild(ta);
+
+    if(!s.frFeedback){
+      frWrap.appendChild(e('button',{className:'fr-check-btn',disabled:!s.freeResponse.trim(),onClick:checkFR},'Check Answer'));
+    }else{
+      const fb=e('div',{style:{marginTop:'12px',padding:'14px',borderRadius:'10px',
+        background:s.frFeedback.correct?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)',
+        border:`1px solid ${s.frFeedback.correct?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)'}`}});
+      fb.appendChild(e('div',{style:{fontSize:'14px',fontWeight:'700',color:s.frFeedback.correct?'#86efac':'#fca5a5',marginBottom:'6px'}},
+        s.frFeedback.correct?'✓ Correct!':'✗ Not quite'));
+      const ans=e('div',{style:{fontSize:'13px',color:'#94a3b8'}});
+      ans.appendChild(e('strong',{style:{color:'#e2e8f0'}},'Best answer: '));
+      ans.appendChild(document.createTextNode(s.frFeedback.correctAnswer));
+      fb.appendChild(ans);
+      if(s.frFeedback.matched.length>0){
+        fb.appendChild(e('div',{style:{fontSize:'12px',color:'#60a5fa',marginTop:'6px'}},`Keywords matched: ${s.frFeedback.matched.join(', ')}`));
+      }
+      frWrap.appendChild(fb);
+    }
+    box.appendChild(frWrap);
+  }
+
+  area.appendChild(box);
+
+  // Explanation
+  if(s.showExplanation&&s.mode!=='review'){
+    const exBox=e('div',{className:'explain-box fade-up'});
+    exBox.appendChild(e('div',{className:'explain-label'},'Explanation'));
+    exBox.appendChild(e('div',{className:'explain-text'},card.explain));
+    area.appendChild(exBox);
+  }
+
+  // Next button
+  if(s.showExplanation||(s.mode==='review'&&s.flipped)){
+    area.appendChild(e('button',{className:'next-btn',onClick:nextCard},'Next Card →'));
+  }
+
+  wrap.appendChild(area);
+  app.appendChild(wrap);
+
+  // Focus textarea on free response mode
+  if(s.mode==='freeresponse'&&!s.frFeedback){
+    const ta=app.querySelector('textarea');
+    if(ta)setTimeout(()=>ta.focus(),50);
+  }
+}
+
+// Initial render
+render();
+</script>
+</body>
+</html>
